@@ -1,0 +1,6 @@
+apiVersion: v2
+name: recipe-frontend
+description: Helm chart for the Recipe Frontend service
+type: application
+version: 1.0.0
+appVersion: "1.0.0"

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recipe Manager</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header>
+    <h1>Recipe Manager</h1>
+    <p class="subtitle">Microservice Recipe Application</p>
+  </header>
+
+  <main>
+    <% if (error) { %>
+      <div class="alert alert-error"><%= error %></div>
+    <% } %>
+
+    <section class="add-recipe">
+      <h2>Add New Recipe</h2>
+      <form action="/recipes" method="POST">
+        <div class="form-group">
+          <label for="title">Title</label>
+          <input type="text" id="title" name="title" required maxlength="200" placeholder="Recipe title">
+        </div>
+        <div class="form-group">
+          <label for="ingredients">Ingredients</label>
+          <textarea id="ingredients" name="ingredients" required rows="4" maxlength="2000"
+                    placeholder="One ingredient per line"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="instructions">Instructions</label>
+          <textarea id="instructions" name="instructions" required rows="4" maxlength="5000"
+                    placeholder="Step-by-step instructions"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Add Recipe</button>
+      </form>
+    </section>
+
+    <section class="recipes">
+      <h2>All Recipes (<%= recipes.length %>)</h2>
+      <% if (recipes.length === 0) { %>
+        <p class="empty-state">No recipes yet. Add one above!</p>
+      <% } else { %>
+        <div class="recipe-grid">
+          <% recipes.forEach(recipe => { %>
+            <div class="recipe-card">
+              <h3><%= recipe.title %></h3>
+              <div class="recipe-section">
+                <h4>Ingredients</h4>
+                <p><%= recipe.ingredients %></p>
+              </div>
+              <div class="recipe-section">
+                <h4>Instructions</h4>
+                <p><%= recipe.instructions %></p>
+              </div>
+              <form action="/recipes/<%= recipe.id %>/delete" method="POST" class="delete-form">
+                <button type="submit" class="btn btn-danger"
+                        onclick="return confirm('Delete this recipe?')">Delete</button>
+              </form>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+    </section>
+  </main>
+
+  <footer>
+    <p>Recipe Manager &mdash; Microservice CI/CD Demo</p>
+  </footer>
+</body>
+</html>

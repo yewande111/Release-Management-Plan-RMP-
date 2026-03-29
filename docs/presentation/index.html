@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Release Management Plan — Presentation</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --card: #334155;
+    --accent: #3b82f6;
+    --accent-light: #60a5fa;
+    --green: #22c55e;
+    --orange: #f59e0b;
+    --red: #ef4444;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --radius: 12px;
+  }
+
+  html { font-size: 18px; scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* ── Slide Container ── */
+  .deck { position: relative; width: 100%; height: 100%; }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    padding: 3rem 5rem;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+
+  .slide.active { display: flex; opacity: 1; }
+
+  /* ── Typography ── */
+  h1 { font-size: 2.8rem; font-weight: 800; line-height: 1.15; margin-bottom: 0.5rem; }
+  h2 { font-size: 2.2rem; font-weight: 700; margin-bottom: 1rem; color: var(--accent-light); }
+  h3 { font-size: 1.4rem; font-weight: 600; margin-bottom: 0.6rem; color: var(--accent-light); }
+  p, li { font-size: 1.1rem; line-height: 1.6; color: var(--muted); }
+  li { margin-bottom: 0.45rem; }
+  ul { list-style: none; padding-left: 0; }
+  ul li::before { content: "▸ "; color: var(--accent); font-weight: 700; }
+
+  .subtitle { font-size: 1.3rem; color: var(--muted); margin-bottom: 1.5rem; }
+  .highlight { color: var(--accent-light); }
+  .green { color: var(--green); }
+  .orange { color: var(--orange); }
+  .red { color: var(--red); }
+  strong { color: var(--text); }
+
+  /* ── Layout helpers ── */
+  .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-top: 1rem; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--card);
+    border-radius: var(--radius);
+    padding: 1.4rem;
+  }
+
+  .card-accent {
+    background: var(--surface);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 1.4rem;
+    margin-bottom: 1rem;
+  }
+
+  /* ── Tables ── */
+  table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.95rem; }
+  th { text-align: left; padding: 0.6rem 0.8rem; background: var(--surface); color: var(--accent-light); border-bottom: 2px solid var(--accent); }
+  td { padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--card); color: var(--muted); }
+  tr:hover td { background: rgba(59,130,246,0.06); }
+
+  /* ── Diagrams (ASCII-art style) ── */
+  .diagram {
+    background: var(--surface);
+    border: 1px solid var(--card);
+    border-radius: var(--radius);
+    padding: 1.2rem 1.6rem;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.85rem;
+    white-space: pre;
+    line-height: 1.5;
+    color: var(--accent-light);
+    overflow-x: auto;
+    margin-top: 1rem;
+  }
+
+  /* ── Flow boxes ── */
+  .flow { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-top: 1rem; }
+  .flow-box {
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .flow-arrow { color: var(--accent); font-size: 1.3rem; }
+
+  /* ── Badge ── */
+  .badge {
+    display: inline-block;
+    padding: 0.2rem 0.7rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .badge-blue { background: rgba(59,130,246,0.2); color: var(--accent-light); }
+  .badge-green { background: rgba(34,197,94,0.2); color: var(--green); }
+  .badge-orange { background: rgba(245,158,11,0.2); color: var(--orange); }
+  .badge-red { background: rgba(239,68,68,0.2); color: var(--red); }
+
+  /* ── Progress bar ── */
+  .progress {
+    position: fixed;
+    bottom: 0; left: 0;
+    height: 3px;
+    background: var(--accent);
+    transition: width 0.4s ease;
+    z-index: 100;
+  }
+
+  /* ── Slide counter ── */
+  .counter {
+    position: fixed;
+    bottom: 1rem; right: 2rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+    z-index: 100;
+  }
+
+  /* ── Nav hint ── */
+  .nav-hint {
+    position: fixed;
+    bottom: 1rem; left: 2rem;
+    font-size: 0.75rem;
+    color: var(--card);
+    z-index: 100;
+  }
+
+  /* ── Title slide special ── */
+  .title-slide { text-align: center; }
+  .title-slide h1 { font-size: 3.2rem; margin-bottom: 0.3rem; }
+  .title-slide .subtitle { font-size: 1.5rem; }
+  .title-line {
+    width: 120px;
+    height: 4px;
+    background: var(--accent);
+    border-radius: 2px;
+    margin: 1.2rem auto;
+  }
+  .meta { color: var(--card); font-size: 0.95rem; margin-top: 0.8rem; }
+
+  /* ── Tier table colours ── */
+  .tier-1 td:first-child { color: var(--green); font-weight: 700; }
+  .tier-2 td:first-child { color: var(--accent-light); font-weight: 700; }
+  .tier-3 td:first-child { color: var(--orange); font-weight: 700; }
+  .tier-4 td:first-child { color: var(--red); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+<!-- ════════════════════════════════════════════════════════ SLIDE 1 — TITLE -->
+<section class="slide title-slide active" data-slide="1">
+  <h1>Release Management Plan</h1>
+  <div class="title-line"></div>
+  <p class="subtitle">Enterprise Microservice CI/CD Deployment</p>
+  <p class="subtitle" style="font-size:1.1rem;">Recipe Management Application</p>
+  <p class="meta">DevOps — Continuous Assessment &nbsp;|&nbsp; March 2026</p>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ SLIDE 2 — AGENDA -->
+<section class="slide" data-slide="2">
+  <h2>Agenda</h2>
+  <div class="columns">
+    <div>
+      <ul>
+        <li>System Architecture</li>
+        <li>Repository &amp; Branching Strategy</li>
+        <li>CI/CD Pipeline Design</li>
+        <li>Deployment Strategy (Blue/Green)</li>
+        <li>Infrastructure as Code</li>
+        <li>Container Orchestration</li>
+      </ul>
+    </div>
+    <div>
+      <ul>
+        <li>Performance &amp; Scaling</li>
+        <li>Monitoring &amp; Logging</li>
+        <li>Security &amp; Vulnerability Scanning</li>
+        <li>Backup, Restore &amp; Rollback</li>
+        <li>Cost &amp; Sustainability</li>
+        <li>Critical Reflection</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ SLIDE 3 — ARCHITECTURE -->
+<section class="slide" data-slide="3">
+  <h2>System Architecture</h2>
+  <p class="subtitle">Three loosely coupled services — independently deployable</p>
+  <div class="three-col">
+    <div class="card">
+      <h3>Frontend</h3>
+      <p><strong>Node.js 20 / Express / EJS</strong></p>
+      <p>Server-rendered web UI<br>Port 3000 <span class="badge badge-blue">LoadBalancer</span></p>
+    </div>
+    <div class="card">
+      <h3>Backend API</h3>
+      <p><strong>Java 17 / Spring Boot 3</strong></p>
+      <p>RESTful CRUD API<br>Port 8080 <span class="badge badge-green">ClusterIP</span></p>
+    </div>
+    <div class="card">
+      <h3>Database</h3>
+      <p><strong>MongoDB 7</strong></p>
+      <p>Document storage<br>Port 27017 <span class="badge badge-green">StatefulSet</span></p>
+    </div>
+  </div>
+  <div class="diagram">  Browser ──► Frontend (EJS) ──► Backend (REST) ──► MongoDB
+                LoadBalancer       ClusterIP            StatefulSet</div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ SLIDE 4 — REPO STRATEGY -->
+<section class="slide" data-slide="4">
+  <h2>Repository &amp; Branching</h2>
+  <div class="columns">
+    <div>
+      <h3>Mono-Repo Decision</h3>
+      <ul>
+        <li><strong>Atomic cross-service changes</strong> — one commit, one PR</li>
+        <li>Shared infra code (Terraform, Helm) alongside services</li>
+        <li>Path-filtered CI isolates per-service pipelines</li>
+        <li>Single clone for full project visibility</li>
+      </ul>
+      <br>
+      <p><em>Trade-off:</em> coarser access control vs. simpler coordination</p>
+    </div>
+    <div>
+      <h3>GitHub Flow + develop</h3>
+      <div class="diagram">feature/* ──► develop ──► main ──► Production
+hotfix/*  ──► main (direct)</div>
+      <br>
+      <ul>
+        <li><code>main</code> — always deployable, protected</li>
+        <li><code>develop</code> — integration branch</li>
+        <li>PRs require: CI pass + Trivy scan + 1 review</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ SLIDE 5 — CI PIPELINE -->
+<section class="slide" data-slide="5">
+  <h2>CI Pipeline Design</h2>
+  <p class="subtitle">Per-service, path-filtered, fully independent</p>
+  <div class="columns">
+    <div>
+      <h3>Frontend CI</h3>
+      <div class="flow">
+        <span class="flow-box">Checkout</span><span class="flow-arrow">→</span>
+        <span class="flow-box">npm install</span><span class="flow-arrow">→</span>
+        <span class="flow-box">Lint</span><span class="flow-arrow">→</span>
+        <span class="flow-box">Jest Tests</span><span class="flow-arrow">→</span>
+        <span class="flow-box">Docker Build</span><span class="flow-arrow">→</span>
+        <span class="flow-box">Trivy Scan</span><span class="flow-arrow">→</span>
+        <span class="flow-box">ACR Push</span>
+      </div>
+      <br>
+      <p>Triggers: <code>services/frontend/**</code> on main/develop</p>
+    </div>
+    <div>
+      <h3>Backend CI</h3>
+      <div class="flow">
+        <span class="flow-box">Checkout</span><span class="flow-arrow">→</span>
+        <span class="flow-box">Maven Build</span><span class="flow-arrow">→</span>
+        <span class="flow-box">Unit Tests</span><span class="flow-arrow">→</span>
+        <span class="flow-box">Docker Build</span><span class="flow-arrow">→</span>
+        <span class="flow-box">Trivy Scan</span><span class="flow-arrow">→</span>
+        <span class="flow-box">ACR Push</span>
+      </div>
+      <br>
+      <p>Triggers: <code>services/backend/**</code> on main/develop</p>
+    </div>
+  </div>
+  <br>
+  <div class="card-accent">
+    <strong>Key:</strong> Image tags use Git SHA prefixes — every image maps to an exact commit. Images only pushed on <code>main</code>.
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ SLIDE 6 — CD PIPELINE -->
+<section class="slide" data-slide="6">
+  <h2>CD Pipeline — Deployment</h2>
+  <p class="subtitle">Triggered on CI completion (main) or manually via workflow_dispatch</p>
+  <div class="flow" style="justify-content: center; margin: 1.5rem 0;">
+    <span class="flow-box">Azure Login</span><span class="flow-arrow">→</span>
+    <span class="flow-box">Get AKS Creds</span><span class="flow-arrow">→</span>
+    <span class="flow-box">Detect Inactive Slot</span><span class="flow-arrow">→</span>
+    <span class="flow-box">Helm Deploy (MongoDB)</span><span class="flow-arrow">→</span>
+    <span class="flow-box">Helm Deploy (BE)</span><span class="flow-arrow">→</span>
+    <span class="flow-box">Helm Deploy (FE)</span><span class="flow-arrow">→</span>
+    <span class="flow-box">Health Check</span><span class="flow-arrow">→</span>
+    <span class="flow-box" style="border-color: var(--green);">Switch Traffic</span>
+  </div>
+  <div class="columns">
+    <div class="card-accent">
+      <h3>CI/CD Platform: GitHub Actions</h3>
+      <ul>
+        <li>Zero setup — built into GitHub</li>
+        <li>First-party Azure actions</li>
+        <li>YAML declarative config</li>
+        <li>2,000 min/month free tier</li>
+      </ul>
+    </div>
+    <div class="card-accent">
+      <h3>Why not Jenkins / GitLab CI?</h3>
+      <ul>
+        <li>Jenkins: self-hosted infra overhead, plugin management</li>
+        <li>GitLab CI: would require moving the repo</li>
+        <li>Azure DevOps: strong Azure integration, but adds org complexity</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ SLIDE 7 — BLUE/GREEN -->
+<section class="slide" data-slide="7">
+  <h2>Blue/Green Deployment</h2>
+  <p class="subtitle">Zero downtime. Instant rollback. No service mesh required.</p>
+  <div class="diagram">     Kubernetes Service  ─────────────────────────►  Green Pods (v2 — LIVE)
+     selector: slot=green                            ┌──────────┐ ┌──────────┐
+                                                     │ Green P1 │ │ Green P2 │
+                                                     └──────────┘ └──────────┘
+     ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+     (idle — prev version)                           ┌──────────┐ ┌──────────┐
+                                                     │ Blue  P1 │ │ Blue  P2 │
+                                                     └──────────┘ └──────────┘</div>
+  <div class="columns" style="margin-top:1rem;">
+    <div class="card">
+      <h3>Why Blue/Green?</h3>
+      <table>
+        <tr><td>Recreate</td><td class="red">Has downtime</td></tr>
+        <tr><td>Rolling</td><td class="orange">Slow rollback</td></tr>
+        <tr><td><strong>Blue/Green</strong></td><td class="green">Instant rollback &lt;10s</td></tr>
+        <tr><td>Canary</td><td class="orange">Needs service mesh</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Traffic Switch</h3>
+      <p style="font-family:monospace; font-size:0.85rem; color:var(--accent-light); margin-top:0.5rem;">
+        kubectl patch svc recipe-frontend<br>
+        &nbsp;&nbsp;-p '{"spec":{"selector":{"slot":"green"}}}'
+      </p>
+      <br>
+      <p>Atomic metadata operation — existing connections drain gracefully.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ SLIDE 8 — IaC -->
+<section class="slide" data-slide="8">
+  <h2>Infrastructure as Code — Terraform</h2>
+  <div class="columns">
+    <div>
+      <h3>Why Terraform?</h3>
+      <table>
+        <tr><th>Criterion</th><th>Terraform</th><th>Bicep</th></tr>
+        <tr><td>Multi-cloud</td><td class="green">Yes</td><td class="red">Azure only</td></tr>
+        <tr><td>State mgmt</td><td class="green">Explicit</td><td class="orange">Implicit</td></tr>
+        <tr><td>Plan/preview</td><td class="green">terraform plan</td><td class="green">what-if</td></tr>
+        <tr><td>Community</td><td class="green">Largest</td><td class="orange">Growing</td></tr>
+      </table>
+      <br>
+      <p><em>Trade-off:</em> Bicep has zero state management overhead and is always current with Azure APIs.</p>
+    </div>
+    <div>
+      <h3>Resources Provisioned</h3>
+      <ul>
+        <li><strong>Resource Group</strong> — logical container</li>
+        <li><strong>VNet + Subnet</strong> — network isolation</li>
+        <li><strong>ACR</strong> (Basic) — container registry</li>
+        <li><strong>AKS</strong> — 1–5 nodes, autoscaling, Calico</li>
+        <li><strong>Log Analytics</strong> — monitoring backend</li>
+        <li><strong>Storage Account</strong> — MongoDB backups</li>
+      </ul>
+      <br>
+      <div class="card-accent">
+        <strong>Destroy &amp; Rebuild:</strong> ~15 min to tear down and recreate everything from code.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ SLIDE 9 — ORCHESTRATION -->
+<section class="slide" data-slide="9">
+  <h2>Container Orchestration — AKS + Helm</h2>
+  <div class="columns">
+    <div>
+      <h3>AKS Cluster Config</h3>
+      <table>
+        <tr><td>K8s Version</td><td>1.29</td></tr>
+        <tr><td>Node Size</td><td>Standard_B2s (burstable)</td></tr>
+        <tr><td>Autoscale</td><td>1 – 5 nodes</td></tr>
+        <tr><td>Network</td><td>Azure CNI + Calico</td></tr>
+        <tr><td>Identity</td><td>System-assigned MI</td></tr>
+        <tr><td>Monitoring</td><td>OMS Agent → Log Analytics</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Helm Charts (×3)</h3>
+      <div class="card" style="margin-bottom:0.8rem;">
+        <strong>frontend/</strong> — Deployment, Service (LB), HPA
+      </div>
+      <div class="card" style="margin-bottom:0.8rem;">
+        <strong>backend/</strong> — Deployment, Service (ClusterIP), HPA
+      </div>
+      <div class="card">
+        <strong>mongodb/</strong> — StatefulSet, Service, PVC, Backup CronJob
+      </div>
+      <br>
+      <p><em>Why Helm over Kustomize?</em> Templating, release history, lifecycle hooks, and chart ecosystem.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ SLIDE 10 — PERFORMANCE & SCALING -->
+<section class="slide" data-slide="10">
+  <h2>Performance &amp; Scaling</h2>
+  <div class="columns">
+    <div>
+      <h3>Performance Measures</h3>
+      <ul>
+        <li><strong>Multi-stage Docker builds</strong> — FE ~80 MB, BE ~150 MB</li>
+        <li><strong>Readiness probes</strong> — traffic only to healthy pods</li>
+        <li><strong>Connection pooling</strong> — MongoDB driver + HTTP keep-alive</li>
+        <li><strong>Prometheus metrics</strong> — request latency histograms</li>
+      </ul>
+      <br>
+      <p><em>Critique:</em> Spring Boot cold start (15–30s) is mitigated by readiness probes and min 2 replicas. GraalVM native image would reduce to &lt;1s but adds build complexity.</p>
+    </div>
+    <div>
+      <h3>Horizontal Pod Autoscaler</h3>
+      <table>
+        <tr><th>Service</th><th>Min</th><th>Max</th><th>CPU Target</th></tr>
+        <tr><td>Frontend</td><td>2</td><td>10</td><td>70%</td></tr>
+        <tr><td>Backend</td><td>2</td><td>8</td><td>70%</td></tr>
+        <tr><td>MongoDB</td><td>1</td><td>1</td><td>—</td></tr>
+      </table>
+      <br>
+      <h3>Cluster Autoscaler</h3>
+      <p>Nodes scale <strong>1 → 5</strong> based on pending pod demand. Scale-in after 10 min idle.</p>
+      <br>
+      <p><em>Critique:</em> MongoDB is a single instance — production needs a Replica Set or managed Cosmos DB.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ SLIDE 11 — MONITORING -->
+<section class="slide" data-slide="11">
+  <h2>Monitoring &amp; Logging</h2>
+  <div class="diagram">  Frontend (/metrics)     Backend (/actuator/prometheus)     MongoDB (stdout)
+         │                            │                              │
+         └────────────────────────────┼──────────────────────────────┘
+                                      ▼
+                               OMS Agent (DaemonSet)
+                                      │
+                          Azure Log Analytics Workspace
+                                      │
+                          Azure Monitor — Alerts &amp; Dashboards</div>
+  <div class="columns" style="margin-top:1rem;">
+    <div class="card">
+      <h3>Metrics Collected</h3>
+      <ul>
+        <li>HTTP request duration (by method, route, status)</li>
+        <li>Node.js event loop lag, heap usage</li>
+        <li>JVM heap, threads, GC pauses</li>
+        <li>AKS node/pod CPU, memory, restarts</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Alert Rules</h3>
+      <table>
+        <tr><td>Pod restart loop</td><td class="badge badge-red">Critical</td></tr>
+        <tr><td>HTTP 5xx &gt; 5%</td><td class="badge badge-orange">Warning</td></tr>
+        <tr><td>P95 latency &gt; 2s</td><td class="badge badge-orange">Warning</td></tr>
+        <tr><td>MongoDB conn failure</td><td class="badge badge-red">Critical</td></tr>
+      </table>
+    </div>
+  </div>
+  <p style="margin-top:1rem;"><em>Critique:</em> Consider Prometheus + Grafana for richer dashboards. Add OpenTelemetry distributed tracing for cross-service correlation.</p>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ SLIDE 12 — SECURITY -->
+<section class="slide" data-slide="12">
+  <h2>Security — Defence in Depth</h2>
+  <div class="three-col">
+    <div class="card">
+      <h3>Network</h3>
+      <ul>
+        <li>VNet isolation (dedicated subnet)</li>
+        <li>Calico network policies</li>
+        <li>No public IP on database</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Container</h3>
+      <ul>
+        <li>Non-root execution</li>
+        <li>Minimal Alpine base (~5 MB)</li>
+        <li>Multi-stage builds (no source in prod)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Application</h3>
+      <ul>
+        <li>Helmet.js security headers</li>
+        <li>Jakarta Bean Validation</li>
+        <li>Rate limiting (100 req/15 min)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="columns" style="margin-top:1rem;">
+    <div class="card">
+      <h3>Supply Chain</h3>
+      <ul>
+        <li><strong>Trivy</strong> scans every image in CI</li>
+        <li>Builds <span class="red">FAIL</span> on CRITICAL CVEs</li>
+        <li>Managed Identity auth (no passwords)</li>
+        <li>ACR admin account disabled</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Production Recommendations</h3>
+      <ul>
+        <li>Azure Key Vault for secrets</li>
+        <li>Pod Security Standards (Restricted)</li>
+        <li>Application Gateway WAF</li>
+        <li>cert-manager + Let's Encrypt TLS</li>
+        <li>Image signing (Notary v2)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ SLIDE 13 — VULNERABILITY -->
+<section class="slide" data-slide="13">
+  <h2>Vulnerability Scanning — Trivy</h2>
+  <div class="columns">
+    <div>
+      <h3>Why Trivy?</h3>
+      <table>
+        <tr><th></th><th>Trivy</th><th>Docker Scout</th><th>Snyk</th></tr>
+        <tr><td>Cost</td><td class="green">Free (Apache 2.0)</td><td class="orange">Free tier</td><td class="orange">Free tier</td></tr>
+        <tr><td>OS pkgs</td><td class="green">✓</td><td class="green">✓</td><td class="green">✓</td></tr>
+        <tr><td>Language deps</td><td class="green">✓</td><td class="green">✓</td><td class="green">✓</td></tr>
+        <tr><td>IaC scanning</td><td class="green">✓</td><td class="red">✗</td><td class="green">✓</td></tr>
+        <tr><td>License scan</td><td class="green">✓</td><td class="red">✗</td><td class="green">✓</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Severity Policy</h3>
+      <div class="card" style="margin-bottom:0.8rem; border-left:4px solid var(--red);">
+        <span class="badge badge-red">CRITICAL</span> &nbsp;Build FAILS — blocks deployment
+      </div>
+      <div class="card" style="margin-bottom:0.8rem; border-left:4px solid var(--orange);">
+        <span class="badge badge-orange">HIGH</span> &nbsp;Warning — address next sprint
+      </div>
+      <div class="card" style="border-left:4px solid var(--muted);">
+        <span class="badge badge-blue">MEDIUM/LOW</span> &nbsp;Informational — tracked
+      </div>
+      <br>
+      <p><em>Critique:</em> Shift-left only. Add ACR Defender for continuous scanning + Dependabot for automated updates.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ SLIDE 14 — BACKUP & ROLLBACK -->
+<section class="slide" data-slide="14">
+  <h2>Backup, Restore &amp; Rollback</h2>
+  <div class="columns">
+    <div>
+      <h3>Backup Strategy</h3>
+      <div class="card-accent">
+        <strong>RPO:</strong> 24 hours &nbsp;|&nbsp; <strong>RTO:</strong> 1 hour
+      </div>
+      <ul>
+        <li>Kubernetes <strong>CronJob</strong> — daily at 02:00 UTC</li>
+        <li><code>mongodump</code> → tar/gzip compressed</li>
+        <li>7-day rolling retention</li>
+        <li>Target: Azure Blob Storage (LRS)</li>
+      </ul>
+      <br>
+      <p><em>Critique:</em> Add backup-to-Blob automation, monthly restore tests, encryption at rest. Consider Cosmos DB for built-in PITR.</p>
+    </div>
+    <div>
+      <h3>Rollback Tiers</h3>
+      <table>
+        <tr class="tier-1"><td>Tier 1</td><td>Slot switch</td><td class="green">&lt;10s</td></tr>
+        <tr class="tier-2"><td>Tier 2</td><td>Helm rollback</td><td>&lt;60s</td></tr>
+        <tr class="tier-3"><td>Tier 3</td><td>Previous image tag</td><td>&lt;5 min</td></tr>
+        <tr class="tier-4"><td>Tier 4</td><td>Full infra rebuild</td><td>15–30 min</td></tr>
+      </table>
+      <br>
+      <div class="card-accent">
+        <strong>Tier 1 is instant</strong> — previous pods stay running. Switching the Service selector is a metadata-only operation.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ SLIDE 15 — COST -->
+<section class="slide" data-slide="15">
+  <h2>Cost &amp; Sustainability</h2>
+  <div class="columns">
+    <div>
+      <h3>Monthly Cost Estimate</h3>
+      <table>
+        <tr><th>Component</th><th>Dev</th><th>Prod</th></tr>
+        <tr><td>AKS Control Plane</td><td>$0</td><td>~$73</td></tr>
+        <tr><td>Node VMs</td><td>~$60</td><td>~$210</td></tr>
+        <tr><td>ACR</td><td>~$5</td><td>~$20</td></tr>
+        <tr><td>Log Analytics</td><td>~$10</td><td>~$35</td></tr>
+        <tr><td>Storage</td><td>&lt;$1</td><td>&lt;$5</td></tr>
+        <tr style="font-weight:700;"><td>Total</td><td class="highlight">~$75</td><td class="highlight">~$345</td></tr>
+      </table>
+      <p style="margin-top:0.5rem;"><em>All tooling is open-source / free-tier.</em></p>
+    </div>
+    <div>
+      <h3>Sustainability Measures</h3>
+      <ul>
+        <li><strong>Burstable VMs</strong> — lower baseline energy</li>
+        <li><strong>Autoscaling</strong> — pods + nodes scale down when idle</li>
+        <li><strong>Scheduled teardown</strong> — destroy non-prod overnight (~65% compute savings)</li>
+        <li><strong>Minimal images</strong> — less storage &amp; transfer</li>
+        <li><strong>Azure Emissions Dashboard</strong> — track carbon footprint per subscription</li>
+      </ul>
+      <br>
+      <p><em>Most impactful:</em> Automating overnight environment teardown via scheduled GitHub Actions.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ SLIDE 16 — ADDITIONAL FEATURES -->
+<section class="slide" data-slide="16">
+  <h2>Additional Features</h2>
+  <div class="columns">
+    <div class="card" style="border-left:4px solid var(--green);">
+      <h3>1. Automated MongoDB Backup</h3>
+      <p>Kubernetes CronJob runs <code>mongodump</code> daily with 7-day retention and auto-cleanup.</p>
+    </div>
+    <div class="card" style="border-left:4px solid var(--accent);">
+      <h3>2. Horizontal Pod Autoscaling</h3>
+      <p>HPA v2 with multi-metric scaling (CPU + memory) on frontend and backend services.</p>
+    </div>
+  </div>
+  <div class="columns" style="margin-top:1rem;">
+    <div class="card" style="border-left:4px solid var(--orange);">
+      <h3>3. Container Vulnerability Scanning</h3>
+      <p>Trivy integrated into CI — scans OS packages + language dependencies. Fails on CRITICAL CVEs.</p>
+    </div>
+    <div class="card" style="border-left:4px solid var(--red);">
+      <h3>4. Blue/Green Zero-Downtime Deploy</h3>
+      <p>Pod label slot switching with automatic inactive-slot detection and instant rollback capability.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ SLIDE 17 — REFLECTION -->
+<section class="slide" data-slide="17">
+  <h2>Critical Reflection</h2>
+  <div class="columns">
+    <div>
+      <h3 class="green">Strengths</h3>
+      <ul>
+        <li><strong>Full automation</strong> — zero manual steps from commit to production</li>
+        <li><strong>Independent pipelines</strong> — per-service CI with path filters</li>
+        <li><strong>Instant rollback</strong> — blue/green slot switch in &lt;10s</li>
+        <li><strong>Security by default</strong> — non-root, minimal images, Trivy, managed identity</li>
+        <li><strong>Observability</strong> — Prometheus metrics + centralised logging</li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="orange">Limitations &amp; Future Work</h3>
+      <ul>
+        <li><strong>Single MongoDB</strong> — needs Replica Set / Cosmos DB</li>
+        <li><strong>No integration tests</strong> — add FE→BE→DB test stage</li>
+        <li><strong>No service mesh</strong> — needed for canary, mTLS, tracing</li>
+        <li><strong>No GitOps</strong> — ArgoCD/Flux for declarative cluster state</li>
+        <li><strong>Manual rollback</strong> — automate with post-deploy health gate</li>
+        <li><strong>No auth</strong> — add Azure AD / Entra ID for production</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ SLIDE 18 — CLOSING -->
+<section class="slide title-slide" data-slide="18">
+  <h1>Thank You</h1>
+  <div class="title-line"></div>
+  <p class="subtitle">Questions?</p>
+  <br>
+  <div style="display:flex; justify-content:center; gap:2rem; flex-wrap:wrap;">
+    <div class="card" style="text-align:center; min-width:180px;">
+      <p style="font-size:2rem; font-weight:800; color:var(--accent-light);">3</p>
+      <p>Microservices</p>
+    </div>
+    <div class="card" style="text-align:center; min-width:180px;">
+      <p style="font-size:2rem; font-weight:800; color:var(--green);">4</p>
+      <p>CI/CD Workflows</p>
+    </div>
+    <div class="card" style="text-align:center; min-width:180px;">
+      <p style="font-size:2rem; font-weight:800; color:var(--orange);">&lt;10s</p>
+      <p>Rollback Time</p>
+    </div>
+    <div class="card" style="text-align:center; min-width:180px;">
+      <p style="font-size:2rem; font-weight:800; color:var(--red);">~15min</p>
+      <p>Full Rebuild</p>
+    </div>
+  </div>
+  <p class="meta" style="margin-top:2rem;">Enterprise Microservice CI/CD Deployment — March 2026</p>
+</section>
+
+</div><!-- /deck -->
+
+<!-- ── Progress bar & counter ── -->
+<div class="progress" id="progress"></div>
+<div class="counter" id="counter"></div>
+<div class="nav-hint">← → or Space to navigate &nbsp;|&nbsp; F for fullscreen</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const total  = slides.length;
+  let current  = 0;
+
+  function show(n) {
+    if (n < 0 || n >= total) return;
+    slides[current].classList.remove('active');
+    current = n;
+    slides[current].classList.add('active');
+    document.getElementById('counter').textContent = (current + 1) + ' / ' + total;
+    document.getElementById('progress').style.width = ((current + 1) / total * 100) + '%';
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); show(current + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(current - 1); }
+    else if (e.key === 'Home') { e.preventDefault(); show(0); }
+    else if (e.key === 'End')  { e.preventDefault(); show(total - 1); }
+    else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+  });
+
+  // Touch swipe
+  let touchX = 0;
+  document.addEventListener('touchstart', function(e) { touchX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', function(e) {
+    const dx = e.changedTouches[0].screenX - touchX;
+    if (dx < -50) show(current + 1);
+    else if (dx > 50) show(current - 1);
+  });
+
+  // Click left/right halves
+  document.addEventListener('click', function(e) {
+    if (e.clientX > window.innerWidth * 0.65) show(current + 1);
+    else if (e.clientX < window.innerWidth * 0.35) show(current - 1);
+  });
+
+  show(0);
+})();
+</script>
+</body>
+</html>

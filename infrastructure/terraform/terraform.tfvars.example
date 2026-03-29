@@ -1,0 +1,11 @@
+# Copy this file to terraform.tfvars and fill in your values.
+
+project_name       = "recipe-app"
+environment        = "dev"
+location           = "westeurope"
+aks_node_count     = 2
+aks_node_vm_size   = "Standard_B2s"
+aks_max_node_count = 5
+aks_min_node_count = 1
+kubernetes_version = "1.29"
+acr_sku            = "Basic"

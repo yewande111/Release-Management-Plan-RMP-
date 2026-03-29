@@ -1,0 +1,126 @@
+name: CD — Deploy to AKS
+
+on:
+  workflow_run:
+    workflows: ["CI — Frontend", "CI — Backend"]
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      target_slot:
+        description: "Deployment slot (blue or green)"
+        required: true
+        default: "green"
+        type: choice
+        options:
+          - blue
+          - green
+
+env:
+  RESOURCE_GROUP: rg-recipe-app-dev
+  AKS_CLUSTER: aks-recipe-app-dev
+  NAMESPACE: recipe-app
+
+jobs:
+  deploy:
+    name: Deploy to AKS
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Get AKS credentials
+        run: |
+          az aks get-credentials \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name ${{ env.AKS_CLUSTER }} \
+            --overwrite-existing
+
+      - name: Create namespace
+        run: kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Determine deployment slot
+        id: slot
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "slot=${{ github.event.inputs.target_slot }}" >> $GITHUB_OUTPUT
+          else
+            # Auto-detect: if green is active, deploy to blue and vice versa
+            CURRENT=$(kubectl get svc recipe-frontend -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.selector.slot}' 2>/dev/null || echo "none")
+            if [ "$CURRENT" == "green" ]; then
+              echo "slot=blue" >> $GITHUB_OUTPUT
+            else
+              echo "slot=green" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Set image tag
+        id: tag
+        run: echo "tag=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+      # --- Deploy MongoDB ---
+      - name: Deploy MongoDB
+        run: |
+          helm upgrade --install recipe-mongodb \
+            infrastructure/helm/mongodb \
+            --namespace ${{ env.NAMESPACE }} \
+            --wait --timeout 5m
+
+      # --- Deploy Backend (to target slot) ---
+      - name: Deploy Backend
+        run: |
+          helm upgrade --install recipe-backend \
+            infrastructure/helm/backend \
+            --namespace ${{ env.NAMESPACE }} \
+            --set image.repository=${{ secrets.ACR_LOGIN_SERVER }}/recipe-backend \
+            --set image.tag=${{ steps.tag.outputs.tag }} \
+            --set deployment.slot=${{ steps.slot.outputs.slot }} \
+            --wait --timeout 5m
+
+      # --- Deploy Frontend (to target slot) ---
+      - name: Deploy Frontend
+        run: |
+          helm upgrade --install recipe-frontend \
+            infrastructure/helm/frontend \
+            --namespace ${{ env.NAMESPACE }} \
+            --set image.repository=${{ secrets.ACR_LOGIN_SERVER }}/recipe-frontend \
+            --set image.tag=${{ steps.tag.outputs.tag }} \
+            --set deployment.slot=${{ steps.slot.outputs.slot }} \
+            --wait --timeout 5m
+
+      # --- Health check ---
+      - name: Verify deployment health
+        run: |
+          echo "Waiting for pods to be ready..."
+          kubectl wait --for=condition=ready pod \
+            -l app=recipe-frontend,slot=${{ steps.slot.outputs.slot }} \
+            -n ${{ env.NAMESPACE }} --timeout=120s
+          kubectl wait --for=condition=ready pod \
+            -l app=recipe-backend,slot=${{ steps.slot.outputs.slot }} \
+            -n ${{ env.NAMESPACE }} --timeout=120s
+          echo "All pods healthy on slot: ${{ steps.slot.outputs.slot }}"
+
+      # --- Switch traffic ---
+      - name: Switch service selectors to new slot
+        run: |
+          kubectl patch svc recipe-frontend -n ${{ env.NAMESPACE }} \
+            -p '{"spec":{"selector":{"slot":"${{ steps.slot.outputs.slot }}"}}}'
+          kubectl patch svc recipe-backend -n ${{ env.NAMESPACE }} \
+            -p '{"spec":{"selector":{"slot":"${{ steps.slot.outputs.slot }}"}}}'
+          echo "Traffic switched to slot: ${{ steps.slot.outputs.slot }}"
+
+      - name: Print deployment info
+        run: |
+          echo "=== Deployment Summary ==="
+          echo "Slot: ${{ steps.slot.outputs.slot }}"
+          echo "Image Tag: ${{ steps.tag.outputs.tag }}"
+          echo ""
+          kubectl get pods -n ${{ env.NAMESPACE }}
+          echo ""
+          kubectl get svc -n ${{ env.NAMESPACE }}

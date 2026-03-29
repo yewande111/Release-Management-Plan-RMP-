@@ -1,0 +1,47 @@
+replicaCount: 2
+
+image:
+  repository: ""  # Set by CI/CD: <acr>.azurecr.io/recipe-backend
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+
+env:
+  MONGODB_URI: "mongodb://recipe-mongodb:27017/recipedb"
+  SPRING_PROFILES_ACTIVE: "prod"
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 8
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+livenessProbe:
+  httpGet:
+    path: /actuator/health
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 15
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health
+    port: 8080
+  initialDelaySeconds: 15
+  periodSeconds: 10
+
+deployment:
+  slot: green

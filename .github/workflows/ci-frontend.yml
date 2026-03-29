@@ -1,0 +1,86 @@
+name: CI — Frontend
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "services/frontend/**"
+      - ".github/workflows/ci-frontend.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "services/frontend/**"
+
+env:
+  SERVICE_NAME: recipe-frontend
+  WORKING_DIR: services/frontend
+
+jobs:
+  lint-and-test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: ${{ env.WORKING_DIR }}/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm test
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: ${{ env.WORKING_DIR }}/coverage/
+
+  build-and-push:
+    name: Build & Push Image
+    needs: lint-and-test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to ACR
+        run: az acr login --name ${{ secrets.ACR_NAME }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.SERVICE_NAME }}
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ env.WORKING_DIR }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: "${{ secrets.ACR_LOGIN_SERVER }}/${{ env.SERVICE_NAME }}:latest"
+          format: "table"
+          exit-code: "1"
+          severity: "CRITICAL"
+          ignore-unfixed: true

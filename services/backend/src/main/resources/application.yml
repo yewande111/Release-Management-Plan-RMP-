@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: recipe-backend
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/recipedb}
+
+server:
+  port: ${PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+logging:
+  level:
+    com.recipes: INFO
+    org.springframework: WARN

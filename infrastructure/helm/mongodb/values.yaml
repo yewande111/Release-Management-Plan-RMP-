@@ -1,0 +1,27 @@
+image:
+  repository: mongo
+  tag: "7"
+  pullPolicy: IfNotPresent
+
+service:
+  port: 27017
+
+persistence:
+  enabled: true
+  size: 10Gi
+  storageClass: managed-premium
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+backup:
+  enabled: true
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  storageAccount: ""      # Set by CI/CD
+  containerName: "mongo-backups"
+  retentionDays: 7

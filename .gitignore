@@ -1,0 +1,14 @@
+# .gitignore
+node_modules/
+target/
+*.jar
+.env
+*.tfstate
+*.tfstate.backup
+.terraform/
+*.tfvars
+!terraform.tfvars.example
+coverage/
+.idea/
+*.iml
+.DS_Store

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: recipe-mongodb
+description: Helm chart for MongoDB data layer
+type: application
+version: 1.0.0
+appVersion: "7.0"
