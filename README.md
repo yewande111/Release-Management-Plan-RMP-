@@ -119,10 +119,6 @@ Each service has its own CI pipeline triggered on changes to its directory:
 ### Deployment Strategy: Blue/Green
 The pipeline maintains two environments (blue/green). New deployments target the inactive environment, traffic is switched after health checks pass, and the previous environment is retained for instant rollback.
 
-## Documentation
-
-- [Release Management Plan](docs/release-management-plan.md) — Full RMP report
-- [Architecture Decision Records](docs/) — Key design decisions
 
 ## Additional Features
 
