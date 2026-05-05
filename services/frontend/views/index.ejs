@@ -8,8 +8,15 @@
 </head>
 <body>
   <header>
-    <h1>Recipe Manager</h1>
-    <p class="subtitle">Microservice Recipe Application</p>
+    <div class="header-content">
+      <h1>&#127869; Recipe Manager</h1>
+      <p class="subtitle">Microservice Architecture &mdash; CI/CD Pipeline Demo</p>
+      <div class="status-bar">
+        <span class="status-badge loading" id="statusFrontend">&#9203; Frontend</span>
+        <span class="status-badge loading" id="statusBackend">&#9203; Backend API</span>
+        <span class="status-badge loading" id="statusMongo">&#9203; MongoDB</span>
+      </div>
+    </div>
   </header>
 
   <main>
@@ -21,32 +28,40 @@
       <h2>Add New Recipe</h2>
       <form action="/recipes" method="POST">
         <div class="form-group">
-          <label for="title">Title</label>
-          <input type="text" id="title" name="title" required maxlength="200" placeholder="Recipe title">
+          <label for="title">Recipe Title</label>
+          <input type="text" id="title" name="title" required maxlength="200" placeholder="e.g. Pasta Carbonara">
         </div>
-        <div class="form-group">
-          <label for="ingredients">Ingredients</label>
-          <textarea id="ingredients" name="ingredients" required rows="4" maxlength="2000"
-                    placeholder="One ingredient per line"></textarea>
+        <div class="form-row-two">
+          <div class="form-group">
+            <label for="ingredients">Ingredients</label>
+            <textarea id="ingredients" name="ingredients" required rows="5" maxlength="2000"
+                      placeholder="One ingredient per line&#10;e.g. 200g pasta&#10;3 eggs&#10;100g bacon"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="instructions">Instructions</label>
+            <textarea id="instructions" name="instructions" required rows="5" maxlength="5000"
+                      placeholder="Step-by-step&#10;e.g. 1. Boil pasta&#10;2. Fry bacon&#10;3. Mix and serve"></textarea>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="instructions">Instructions</label>
-          <textarea id="instructions" name="instructions" required rows="4" maxlength="5000"
-                    placeholder="Step-by-step instructions"></textarea>
-        </div>
-        <button type="submit" class="btn btn-primary">Add Recipe</button>
+        <button type="submit" class="btn btn-primary">&#43; Add Recipe</button>
       </form>
     </section>
 
     <section class="recipes">
-      <h2>All Recipes (<%= recipes.length %>)</h2>
+      <div class="recipes-header">
+        <h2>All Recipes <span class="count-badge"><%= recipes.length %></span></h2>
+      </div>
+
       <% if (recipes.length === 0) { %>
-        <p class="empty-state">No recipes yet. Add one above!</p>
+        <p class="empty-state">No recipes yet. Add your first one above!</p>
       <% } else { %>
-        <div class="recipe-grid">
+        <div class="recipe-grid" id="recipeGrid">
           <% recipes.forEach(recipe => { %>
-            <div class="recipe-card">
-              <h3><%= recipe.title %></h3>
+            <div class="recipe-card" data-title="<%= recipe.title.toLowerCase() %>">
+              <div class="recipe-card-header">
+                <h3><%= recipe.title %></h3>
+                <span class="time-ago" data-created="<%= recipe.createdAt %>"></span>
+              </div>
               <div class="recipe-section">
                 <h4>Ingredients</h4>
                 <p><%= recipe.ingredients %></p>
@@ -57,17 +72,57 @@
               </div>
               <form action="/recipes/<%= recipe.id %>/delete" method="POST" class="delete-form">
                 <button type="submit" class="btn btn-danger"
-                        onclick="return confirm('Delete this recipe?')">Delete</button>
+                        onclick="return confirm('Delete this recipe?')">&#128465; Delete</button>
               </form>
             </div>
           <% }); %>
         </div>
+
       <% } %>
     </section>
   </main>
 
   <footer>
-    <p>Recipe Manager &mdash; Microservice CI/CD Demo</p>
+    <p>Recipe Manager &mdash; Frontend (Node.js :3000) &rarr; Backend API (Spring Boot :8080) &rarr; MongoDB (:27017)</p>
   </footer>
+
+  <script>
+    // --- Time ago on each recipe card ---
+    function timeAgo(dateStr) {
+      if (!dateStr) return '';
+      const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+      if (diff < 60) return `${diff}s ago`;
+      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+      return `${Math.floor(diff / 86400)}d ago`;
+    }
+    document.querySelectorAll('.time-ago').forEach(el => {
+      el.textContent = timeAgo(el.dataset.created);
+    });
+
+    // --- Service status badges ---
+    async function loadStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        setStatus('statusFrontend', 'Frontend', data.frontend);
+        setStatus('statusBackend', 'Backend API', data.backend);
+        setStatus('statusMongo', 'MongoDB', data.mongodb);
+      } catch {
+        ['statusFrontend', 'statusBackend', 'statusMongo'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) { el.className = 'status-badge down'; el.textContent = '&#10060; Unreachable'; }
+        });
+      }
+    }
+    function setStatus(id, label, status) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const up = status === 'UP';
+      el.textContent = `${up ? '\u2705' : '\u274C'} ${label}`;
+      el.className = `status-badge ${up ? 'up' : 'down'}`;
+    }
+    loadStatus();
+  </script>
 </body>
 </html>

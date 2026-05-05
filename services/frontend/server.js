@@ -74,6 +74,21 @@ app.get("/metrics", async (_req, res) => {
   res.end(await client.register.metrics());
 });
 
+// --- Service status aggregation ---
+app.get("/api/status", async (_req, res) => {
+  try {
+    const health = await axios.get(`${BACKEND_URL}/actuator/health`, { timeout: 3000 });
+    const data = health.data;
+    res.json({
+      frontend: "UP",
+      backend: data?.status === "UP" ? "UP" : "DOWN",
+      mongodb: data?.components?.mongo?.status === "UP" ? "UP" : "DOWN",
+    });
+  } catch {
+    res.json({ frontend: "UP", backend: "DOWN", mongodb: "UNKNOWN" });
+  }
+});
+
 // --- Routes ---
 
 // Home — list all recipes
